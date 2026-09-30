@@ -39,7 +39,8 @@ interface State {
     progression: Progression,
     bpm: number,
     songIndex: number,
-    seedCode: string
+    seedCode: string,
+    minimalChange: boolean
 }
 
 type SaveCode = string & {typeTag: "__SaveCode"}
@@ -55,7 +56,7 @@ function save(state: State): SaveCode {
     return saveCode as SaveCode;
 }
 
-function restore(code: SaveCode): State {
+function restore(code: SaveCode): Omit<State, "minimalChange"> {
     const codeString = code.slice(2);
     const key = unhex(codeString.slice(0,2)) as Key;
     const scale = unhex(codeString.slice(2,4)) === 0 ? music.scales.major : music.scales.minor;
@@ -87,9 +88,9 @@ function bpmClock() {
     }
 }
 
-function createInitialState(seedOrSave: string): State {
+function createInitialState(seedOrSave: string, minimalChange: boolean): State {
     if (seedOrSave.startsWith("0x")) {
-        return restore(seedOrSave as SaveCode);
+        return {...restore(seedOrSave as SaveCode), minimalChange};
     } else {
         seedRNG(seedOrSave && seedOrSave.length > 0 ? seedOrSave : "" + Math.random());
         return {
@@ -98,13 +99,25 @@ function createInitialState(seedOrSave: string): State {
             progression: progressions[0],
             bpm: 112,
             seedCode: createSeedCode(),
-            songIndex: 0
+            songIndex: 0,
+            minimalChange
         };
     }
 }
 
 function createSeedCode() {
     return hex(rndInt(255)) +hex(rndInt(255)) + hex(rndInt(255)) + hex(rndInt(255));
+}
+
+// replace only 1 or 2 hex digits of the seed code, keeping the rest of the pattern intact
+function mutateSeedCodeMinimally(seedCode: string): string {
+    const digits = seedCode.split("");
+    const digitsToChange = rndInt(2) + 1;
+    for (let i = 0; i < digitsToChange; i++) {
+        const index = rndInt(digits.length);
+        digits[index] = rndInt(16).toString(16).toUpperCase();
+    }
+    return digits.join("");
 }
 
 function mutateState(state: State): void {
@@ -119,7 +132,7 @@ function mutateState(state: State): void {
     if (state.songIndex % 2 === 0) {
         state.progression = choose(progressions);
     }
-    state.seedCode = hex(rndInt(255)) +hex(rndInt(255)) + hex(rndInt(255)) + hex(rndInt(255));
+    state.seedCode = state.minimalChange ? mutateSeedCodeMinimally(state.seedCode) : createSeedCode();
     seedRNG(state.seedCode);
 
     //display.setPatterns(patterns, stateString);
@@ -128,7 +141,8 @@ function mutateState(state: State): void {
 
 function start() {
     const seedOrSave = (document.getElementById("seed-text") as HTMLInputElement).value;
-    const state: State = createInitialState(seedOrSave);
+    const minimalChange = (document.getElementById("minimal-change") as HTMLInputElement).checked;
+    const state: State = createInitialState(seedOrSave, minimalChange);
 
     let patterns = [[],[],[],[],[]] as PatternsType<FourChannelsPlusDrums>;
 
