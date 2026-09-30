@@ -39,8 +39,11 @@ interface State {
     progression: Progression,
     bpm: number,
     songIndex: number,
-    seedCode: string,
-    minimalChange: boolean
+    seedCode: string
+}
+
+function isMinimalChangeEnabled(): boolean {
+    return (document.getElementById("minimal-change") as HTMLInputElement).checked;
 }
 
 type SaveCode = string & {typeTag: "__SaveCode"}
@@ -56,7 +59,7 @@ function save(state: State): SaveCode {
     return saveCode as SaveCode;
 }
 
-function restore(code: SaveCode): Omit<State, "minimalChange"> {
+function restore(code: SaveCode): State {
     const codeString = code.slice(2);
     const key = unhex(codeString.slice(0,2)) as Key;
     const scale = unhex(codeString.slice(2,4)) === 0 ? music.scales.major : music.scales.minor;
@@ -88,9 +91,9 @@ function bpmClock() {
     }
 }
 
-function createInitialState(seedOrSave: string, minimalChange: boolean): State {
+function createInitialState(seedOrSave: string): State {
     if (seedOrSave.startsWith("0x")) {
-        return {...restore(seedOrSave as SaveCode), minimalChange};
+        return restore(seedOrSave as SaveCode);
     } else {
         seedRNG(seedOrSave && seedOrSave.length > 0 ? seedOrSave : "" + Math.random());
         return {
@@ -99,8 +102,7 @@ function createInitialState(seedOrSave: string, minimalChange: boolean): State {
             progression: progressions[0],
             bpm: 112,
             seedCode: createSeedCode(),
-            songIndex: 0,
-            minimalChange
+            songIndex: 0
         };
     }
 }
@@ -122,17 +124,18 @@ function mutateSeedCodeMinimally(seedCode: string): string {
 
 function mutateState(state: State): void {
     state.songIndex++;
-    if (state.songIndex % 8 === 0) {
+    const minimal = isMinimalChangeEnabled();
+    if (!minimal && state.songIndex % 8 === 0) {
         state.bpm = Math.floor(rnd() * 80) + 100;
         //clock.set(state.bpm, frame);
     }
-    if (state.songIndex % 4 === 0) {
+    if (!minimal && state.songIndex % 4 === 0) {
         [state.key, state.scale] = music.modulate(state.key, state.scale);
     }
-    if (state.songIndex % 2 === 0) {
+    if (!minimal && state.songIndex % 2 === 0) {
         state.progression = choose(progressions);
     }
-    state.seedCode = state.minimalChange ? mutateSeedCodeMinimally(state.seedCode) : createSeedCode();
+    state.seedCode = minimal ? mutateSeedCodeMinimally(state.seedCode) : createSeedCode();
     seedRNG(state.seedCode);
 
     //display.setPatterns(patterns, stateString);
@@ -141,8 +144,10 @@ function mutateState(state: State): void {
 
 function start() {
     const seedOrSave = (document.getElementById("seed-text") as HTMLInputElement).value;
-    const minimalChange = (document.getElementById("minimal-change") as HTMLInputElement).checked;
-    const state: State = createInitialState(seedOrSave, minimalChange);
+    const state: State = createInitialState(seedOrSave);
+
+    (document.getElementById("seed-entry") as HTMLElement).style.display = "none";
+    const minimalChangeLabel = document.getElementById("minimal-change-label") as HTMLElement;
 
     let patterns = [[],[],[],[],[]] as PatternsType<FourChannelsPlusDrums>;
 
@@ -162,29 +167,42 @@ function start() {
     ];
 
 
-    function newPatterns() {
+    function newPatterns(isInitial: boolean) {
         seedRNG(state.seedCode);
-        patterns =[
+        const generated = [
             choose([Generators.bass, Generators.bass2, Generators.emptyNote])(state),
             rnd() < 0.7 ? Generators.arp(state) : Generators.emptyNote(),
             rnd() < 0.7 ? Generators.melody1(state) : Generators.emptyNote(),
             choose([Generators.emptyNote, Generators.arp, Generators.melody1])(state),
             rnd() < 0.8 ? Generators.drum() : Generators.emptyDrum(),
-        ];
+        ] as PatternsType<FourChannelsPlusDrums>;
+
+        if (!isInitial && isMinimalChangeEnabled()) {
+            // only swap 1 or 2 channels in, leaving the rest of the pattern as it was
+            const channelsToChange = rndInt(2) + 1;
+            const previous = patterns;
+            const changed = new Set<number>();
+            while (changed.size < channelsToChange) {
+                changed.add(rndInt(generated.length));
+            }
+            patterns = previous.map((p, i) => changed.has(i) ? generated[i] : p) as PatternsType<FourChannelsPlusDrums>;
+        } else {
+            patterns = generated;
+        }
     }
 
     // create initial patterns
-    newPatterns();
-    display.setPatterns(patterns, save(state));
+    newPatterns(true);
+    display.setPatterns(patterns, save(state), minimalChangeLabel);
 
 
     function frame(f: number) {
         const positionInPattern = f % PatternSize;
         if (f % 128 === 0 && f!== 0) {
             mutateState(state);
-            newPatterns();
+            newPatterns(false);
             clock.set(state.bpm, frame);
-            display.setPatterns(patterns, save(state));
+            display.setPatterns(patterns, save(state), minimalChangeLabel);
         }
 
         display.highlightRow(positionInPattern);

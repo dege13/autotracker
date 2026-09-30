@@ -52,6 +52,15 @@
         #display .header {
             font-size: 2em;
             text-align: center;
+            position: relative;
+        }
+
+        #display .header label {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.4em;
         }
 
         #display a.save-string {
@@ -111,7 +120,7 @@
             color: darkorange;
         }
         .tracker {
-            color: #ef6dea;
+            color: #339933;
         }
         #seed-entry {
             font-size:14pt;
@@ -152,17 +161,19 @@
 <body>
 <header>
 <h1><span class="auto">AUTO</span><span class="tracker">TRACKER</span></h1>
-    <p>An endless randomised algorithmic Chiptune composition by <a href="https://www.vitling.xyz">Vitling</a> aka <a href="https://demoscenetimemachine.com/album/gravity">Demoscene Time Machine</a></p>
+    <p>An endless randomised algorithmic Chiptune composition by <a href="https://www.vitling.xyz" target="_new">Vitling</a> aka <a href="https://demoscenetimemachine.com/album/gravity" target="_new">Demoscene Time Machine</a>. Modified by <a href="https://linktr.ee/djchew31" target="_new">dege13</a>.</p>
     <p>Expect much better results with Firefox, Chrome or Opera, because they follow the WebAudio standard much better than Safari</p>
-    <p><a href="https://github.com/DavW/autotracker">Source Code</a></p>
+    <p><a href="https://github.com/dege13/autotracker"  target="_new">Source Code</a> || <a href="https://github.com/vitling/autotracker"  target="_new">Original Source Code</a></p>
 </header>
-<div id="display">
 <div id="seed-entry">
-    Enter Seed: <input autofocus id="seed-text" type="text" placeholder="word or phrase or savecode" size="30">
-    or leave blank for random<br><br>
-    <label><input type="checkbox" id="minimal-change" checked> Minimal change</label><br><br>
+    <span id="seed-fields">
+        Enter Seed: <input autofocus id="seed-text" type="text" placeholder="word or phrase or savecode" size="30">
+        or leave blank for random<br><br>
+    </span>
+    <label id="minimal-change-label"><input type="checkbox" id="minimal-change" checked> Minimal change</label><br><br>
     <button id="start">Start</button>
 </div>
+<div id="display">
 </div>
 </body>
 </html>

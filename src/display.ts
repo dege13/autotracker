@@ -32,8 +32,11 @@ function textRepr(slot: Slot) {
 
 function PatternDisplay(display: HTMLElement) {
 
-    function setPatterns(newPats: Pattern<Slot>[], saveString: string) {
+    function setPatterns(newPats: Pattern<Slot>[], saveString: string, headerExtra?: HTMLElement) {
         display.innerHTML = "<div class='header'>Pattern ID: <a href='?" + saveString + "' class='save-string'>" + saveString + "</a></div>";
+        if (headerExtra) {
+            display.querySelector(".header")?.append(headerExtra);
+        }
         const container = document.createElement("div");
         container.classList.add("columns");
         display.append(container);

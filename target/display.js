@@ -34,8 +34,12 @@ function textRepr(slot) {
     }
 }
 function PatternDisplay(display) {
-    function setPatterns(newPats, saveString) {
+    function setPatterns(newPats, saveString, headerExtra) {
+        var _a;
         display.innerHTML = "<div class='header'>Pattern ID: <a href='?" + saveString + "' class='save-string'>" + saveString + "</a></div>";
+        if (headerExtra) {
+            (_a = display.querySelector(".header")) === null || _a === void 0 ? void 0 : _a.append(headerExtra);
+        }
         const container = document.createElement("div");
         container.classList.add("columns");
         display.append(container);

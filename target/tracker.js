@@ -20,6 +20,9 @@ const progressions = [
     [6, 6, 6, 6, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 5, 5],
     [1, 1, 1, 1, 1, 1, 1, 1, 4, 4, 4, 4, 4, 4, 4, 4]
 ];
+function isMinimalChangeEnabled() {
+    return document.getElementById("minimal-change").checked;
+}
 function hex(v) { return Math.floor(v).toString(16).toUpperCase().padStart(2, '0'); }
 function unhex(v) {
     return parseInt(v, 16);
@@ -59,9 +62,9 @@ function bpmClock() {
         set
     };
 }
-function createInitialState(seedOrSave, minimalChange) {
+function createInitialState(seedOrSave) {
     if (seedOrSave.startsWith("0x")) {
-        return Object.assign(Object.assign({}, restore(seedOrSave)), { minimalChange });
+        return restore(seedOrSave);
     }
     else {
         seedRNG(seedOrSave && seedOrSave.length > 0 ? seedOrSave : "" + Math.random());
@@ -71,8 +74,7 @@ function createInitialState(seedOrSave, minimalChange) {
             progression: progressions[0],
             bpm: 112,
             seedCode: createSeedCode(),
-            songIndex: 0,
-            minimalChange
+            songIndex: 0
         };
     }
 }
@@ -91,24 +93,26 @@ function mutateSeedCodeMinimally(seedCode) {
 }
 function mutateState(state) {
     state.songIndex++;
-    if (state.songIndex % 8 === 0) {
+    const minimal = isMinimalChangeEnabled();
+    if (!minimal && state.songIndex % 8 === 0) {
         state.bpm = Math.floor(rnd() * 80) + 100;
         //clock.set(state.bpm, frame);
     }
-    if (state.songIndex % 4 === 0) {
+    if (!minimal && state.songIndex % 4 === 0) {
         [state.key, state.scale] = music.modulate(state.key, state.scale);
     }
-    if (state.songIndex % 2 === 0) {
+    if (!minimal && state.songIndex % 2 === 0) {
         state.progression = choose(progressions);
     }
-    state.seedCode = state.minimalChange ? mutateSeedCodeMinimally(state.seedCode) : createSeedCode();
+    state.seedCode = minimal ? mutateSeedCodeMinimally(state.seedCode) : createSeedCode();
     seedRNG(state.seedCode);
     //display.setPatterns(patterns, stateString);
 }
 function start() {
     const seedOrSave = document.getElementById("seed-text").value;
-    const minimalChange = document.getElementById("minimal-change").checked;
-    const state = createInitialState(seedOrSave, minimalChange);
+    const state = createInitialState(seedOrSave);
+    document.getElementById("seed-entry").style.display = "none";
+    const minimalChangeLabel = document.getElementById("minimal-change-label");
     let patterns = [[], [], [], [], []];
     const display = PatternDisplay(document.getElementById("display"));
     const clock = bpmClock();
@@ -122,26 +126,39 @@ function start() {
         au.SquareSynth(0.5),
         au.DrumSynth()
     ];
-    function newPatterns() {
+    function newPatterns(isInitial) {
         seedRNG(state.seedCode);
-        patterns = [
+        const generated = [
             choose([Generators.bass, Generators.bass2, Generators.emptyNote])(state),
             rnd() < 0.7 ? Generators.arp(state) : Generators.emptyNote(),
             rnd() < 0.7 ? Generators.melody1(state) : Generators.emptyNote(),
             choose([Generators.emptyNote, Generators.arp, Generators.melody1])(state),
             rnd() < 0.8 ? Generators.drum() : Generators.emptyDrum(),
         ];
+        if (!isInitial && isMinimalChangeEnabled()) {
+            // only swap 1 or 2 channels in, leaving the rest of the pattern as it was
+            const channelsToChange = rndInt(2) + 1;
+            const previous = patterns;
+            const changed = new Set();
+            while (changed.size < channelsToChange) {
+                changed.add(rndInt(generated.length));
+            }
+            patterns = previous.map((p, i) => changed.has(i) ? generated[i] : p);
+        }
+        else {
+            patterns = generated;
+        }
     }
     // create initial patterns
-    newPatterns();
-    display.setPatterns(patterns, save(state));
+    newPatterns(true);
+    display.setPatterns(patterns, save(state), minimalChangeLabel);
     function frame(f) {
         const positionInPattern = f % PatternSize;
         if (f % 128 === 0 && f !== 0) {
             mutateState(state);
-            newPatterns();
+            newPatterns(false);
             clock.set(state.bpm, frame);
-            display.setPatterns(patterns, save(state));
+            display.setPatterns(patterns, save(state), minimalChangeLabel);
         }
         display.highlightRow(positionInPattern);
         // Not a loop because these tuple parts have different types depending on melody vs drum
