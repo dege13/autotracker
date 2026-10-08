@@ -50,6 +50,34 @@
             display:flex; width: 100%; justify-content: space-evenly;
         }
 
+        #display .pattern-halves {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        #display .pattern-half + .pattern-half h3 {
+            display: none;
+        }
+
+        @media(min-width: 1440px) {
+            #display {
+                max-width: 1600px;
+            }
+
+            #display .pattern-halves {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 16px;
+            }
+
+            #display .pattern-half + .pattern-half {
+                border-left: 1px solid #444444;
+            }
+
+            #display .pattern-half + .pattern-half h3 {
+                display: block;
+            }
+        }
+
         #display .header {
             font-size: 2em;
             text-align: center;

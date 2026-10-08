@@ -37,18 +37,24 @@ function PatternDisplay(display: HTMLElement) {
         if (headerExtra) {
             display.querySelector(".header")?.append(headerExtra);
         }
-        const container = document.createElement("div");
-        container.classList.add("columns");
-        display.append(container);
-        function add(pattern: Pattern<Slot>, index: number) {
-            const pDisplay = document.createElement("code");
-            pDisplay.innerHTML =
-                "<h3>" + (index === 4 ? "*" : "⎍") + (index + 1) + "</h3>" +
-                pattern.map((x, i) => "<div class='note' data-index='" + i + "'>" + textRepr(x) + "</div>").join("");
-
-            container.append(pDisplay);
+        const halves = document.createElement("div");
+        halves.classList.add("pattern-halves");
+        display.append(halves);
+        const halfLength = Math.ceil((newPats[0]?.length ?? 0) / 2);
+        for (const offset of [0, halfLength]) {
+            const container = document.createElement("div");
+            container.classList.add("columns", "pattern-half");
+            halves.append(container);
+            newPats.forEach((pattern, channel) => {
+                const pDisplay = document.createElement("code");
+                pDisplay.innerHTML =
+                    "<h3>" + (channel === 4 ? "*" : "⎍") + (channel + 1) + "</h3>" +
+                    pattern.slice(offset, offset + halfLength).map((slot, row) =>
+                        "<div class='note' data-index='" + (offset + row) + "'>" + textRepr(slot) + "</div>"
+                    ).join("");
+                container.append(pDisplay);
+            });
         }
-        newPats.forEach((p, i) => add(p, i))
     }
 
     const patternDisplayStyles = document.createElement("style");
