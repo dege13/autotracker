@@ -115,9 +115,11 @@ function createSeedCode() {
 function mutateSeedCodeMinimally(seedCode: string): string {
     const digits = seedCode.split("");
     const digitsToChange = rndInt(2) + 1;
-    for (let i = 0; i < digitsToChange; i++) {
-        const index = rndInt(digits.length);
-        digits[index] = rndInt(16).toString(16).toUpperCase();
+    const availableIndices = digits.map((_, index) => index);
+    for (let change = 0; change < digitsToChange; change++) {
+        const index = availableIndices.splice(rndInt(availableIndices.length), 1)[0];
+        const currentDigit = unhex(digits[index]);
+        digits[index] = ((currentDigit + rndInt(15) + 1) % 16).toString(16).toUpperCase();
     }
     return digits.join("");
 }

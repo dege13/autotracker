@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "build": "node scripts/build.cjs",
+    "watch": "node scripts/build.cjs --watch"
+  },
   "devDependencies": {
     "typescript": "^7.0.2"
   }
