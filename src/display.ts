@@ -31,11 +31,28 @@ function textRepr(slot: Slot) {
 }
 
 function PatternDisplay(display: HTMLElement) {
+    let previousSaveString: string | undefined;
 
     function setPatterns(newPats: Pattern<Slot>[], saveString: string, headerExtra?: HTMLElement) {
-        display.innerHTML = "<div class='header'>Pattern ID: <a href='?" + saveString + "' class='save-string'>" + saveString + "</a></div>";
+        display.innerHTML = "<div class='header'>Pattern ID: </div>";
+        const header = display.querySelector(".header") as HTMLElement;
+        const saveLink = document.createElement("a");
+        saveLink.href = "?" + saveString;
+        saveLink.classList.add("save-string");
+        Array.from(saveString).forEach((digit, index) => {
+            if (previousSaveString !== undefined && digit !== previousSaveString[index]) {
+                const highlightedDigit = document.createElement("span");
+                highlightedDigit.classList.add("changed-digit");
+                highlightedDigit.textContent = digit;
+                saveLink.append(highlightedDigit);
+            } else {
+                saveLink.append(digit);
+            }
+        });
+        header.append(saveLink);
+        previousSaveString = saveString;
         if (headerExtra) {
-            display.querySelector(".header")?.append(headerExtra);
+            header.append(headerExtra);
         }
         const halves = document.createElement("div");
         halves.classList.add("pattern-halves");

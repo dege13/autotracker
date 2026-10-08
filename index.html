@@ -96,6 +96,19 @@
             color: #ef6dea;
         }
 
+        #display .changed-digit {
+            background-color: #339933;
+            color: white;
+            animation: changed-digit-fade 0.75s ease-out 3s forwards;
+        }
+
+        @keyframes changed-digit-fade {
+            to {
+                background-color: transparent;
+                color: #ef6dea;
+            }
+        }
+
         #display code {
             font-family: "VT323", monospace;
             font-size: 1em;

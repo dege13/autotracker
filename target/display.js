@@ -34,17 +34,35 @@ function textRepr(slot) {
     }
 }
 function PatternDisplay(display) {
+    let previousSaveString;
     function setPatterns(newPats, saveString, headerExtra) {
-        var _a, _b;
-        var _c;
-        display.innerHTML = "<div class='header'>Pattern ID: <a href='?" + saveString + "' class='save-string'>" + saveString + "</a></div>";
+        var _a;
+        var _b;
+        display.innerHTML = "<div class='header'>Pattern ID: </div>";
+        const header = display.querySelector(".header");
+        const saveLink = document.createElement("a");
+        saveLink.href = "?" + saveString;
+        saveLink.classList.add("save-string");
+        Array.from(saveString).forEach((digit, index) => {
+            if (previousSaveString !== undefined && digit !== previousSaveString[index]) {
+                const highlightedDigit = document.createElement("span");
+                highlightedDigit.classList.add("changed-digit");
+                highlightedDigit.textContent = digit;
+                saveLink.append(highlightedDigit);
+            }
+            else {
+                saveLink.append(digit);
+            }
+        });
+        header.append(saveLink);
+        previousSaveString = saveString;
         if (headerExtra) {
-            (_a = display.querySelector(".header")) === null || _a === void 0 ? void 0 : _a.append(headerExtra);
+            header.append(headerExtra);
         }
         const halves = document.createElement("div");
         halves.classList.add("pattern-halves");
         display.append(halves);
-        const halfLength = Math.ceil(((_c = (_b = newPats[0]) === null || _b === void 0 ? void 0 : _b.length) !== null && _c !== void 0 ? _c : 0) / 2);
+        const halfLength = Math.ceil(((_b = (_a = newPats[0]) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0) / 2);
         for (const offset of [0, halfLength]) {
             const container = document.createElement("div");
             container.classList.add("columns", "pattern-half");
